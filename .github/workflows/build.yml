@@ -144,7 +144,9 @@ jobs:
       with:
         fetch-depth: 0
     - name: install deps
-      run: brew install flex bison
+      run: |
+        export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
+        brew install flex bison
     - name: make
       run: make
     - name: upload artifact
