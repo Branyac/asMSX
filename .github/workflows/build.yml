@@ -106,15 +106,6 @@ jobs:
         path: bin
     - name: Build .deb
       run: |
-        ls -la
-
-        cd bin
-        ls -la
-
-        cd asmsx-linux-x86_64
-        ls -la
-    - name: Build .deb
-      run: |
         set -euo pipefail  # Exit on error, undefined vars, pipe failures
 
         RUN_NUMBER=${{ github.run_number }}
@@ -126,9 +117,9 @@ jobs:
 
           mkdir -p pkg_$ARCH/usr/bin/
           if [[ $ARCH == "amd64" ]]; then
-            cp ./bin/asmsx-linux-x86_64 pkg_$ARCH/usr/bin/asmsx
+            cp ./bin/asmsx-linux-x86_64/asmsx pkg_$ARCH/usr/bin/asmsx
           else
-            cp ./bin/asmsx-linux-$ARCH pkg_$ARCH/usr/bin/asmsx
+            cp ./bin/asmsx-linux-$ARCH/asmsx pkg_$ARCH/usr/bin/asmsx
           fi
 
           mkdir -p pkg_$ARCH/DEBIAN pkg_$ARCH/usr/bin
