@@ -110,36 +110,37 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y dpkg-dev fakeroot gettext-base
-    - name: Build amd64 .deb
+    - name: Build .deb
       run: |
-        mkdir -p pkg_amd64/DEBIAN pkg_amd64/usr/bin
-        cp linux64/asmsx pkg_amd64/usr/bin/asmsx
-        chmod 755 pkg_amd64/usr/bin/asmsx
-        RUN_NUMBER=${{ github.run_number }}-1
+        RUN_NUMBER=${{ github.run_number }}
         VERSION=$(git status &>/dev/null && git describe --tags --always 2>/dev/null || echo "$RUN_NUMBER")
-        ARCH=amd64
-        envsubst < packaging/deb/control.template > pkg_amd64/DEBIAN/control
-        dpkg-deb --build pkg_amd64 asmsx_${{ github.run_number }}_amd64.deb
-    - name: Build armhf .deb
-      run: |
-        mkdir -p pkg_armhf/DEBIAN pkg_armhf/usr/bin
-        cp armhf/asmsx pkg_armhf/usr/bin/asmsx
-        chmod 755 pkg_armhf/usr/bin/asmsx
-        RUN_NUMBER=${{ github.run_number }}-1
-        VERSION=$(git status &>/dev/null && git describe --tags --always 2>/dev/null || echo "$RUN_NUMBER")
-        ARCH=armhf
-        envsubst < packaging/deb/control.template > pkg_armhf/DEBIAN/control
-        dpkg-deb --build pkg_armhf asmsx_${{ github.run_number }}_armhf.deb
+
+        ARCHS=( "amd64" "armhf")
+        for ARCH in "${ARCHS[@]}"; do
+          echo "Create package for $ARCH"
+
+          if [[ $ARCH == "amd64" ]]; then
+            cp linux64/asmsx pkg_$ARCH/usr/bin/asmsx
+          elif [[ $ARCH == "armhf" ]]
+            cp armhf/asmsx pkg_$ARCH/usr/bin/asmsx
+          else
+            echo "Unknown architecture"
+            exit 1
+          fi
+
+          mkdir -p pkg_$ARCH/DEBIAN pkg_$ARCH/usr/bin
+          chmod 755 pkg_$ARCH/usr/bin/asmsx
+
+          export ARCH VERSION
+          envsubst < packaging/deb/control.template > pkg_$ARCH/DEBIAN/control
+
+          dpkg-deb --build pkg_$ARCH asmsx_$VERSION_$ARCH.deb
+        done
     - name: Upload .deb artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: asmsx-deb-amd64
-        path: asmsx_${{ github.run_number }}_amd64.deb
-    - name: Upload .deb artifacts (armhf)
-      uses: actions/upload-artifact@v4
-      with:
-        name: asmsx-deb-armhf
-        path: asmsx_${{ github.run_number }}_armhf.deb
+        name: asmsx-debs
+        path: asmsx_*.deb
 
   osx:
     runs-on: macos-latest
