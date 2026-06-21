@@ -112,8 +112,10 @@ jobs:
         sudo apt install -y dpkg-dev fakeroot gettext-base
     - name: Build .deb
       run: |
+        set -euo pipefail  # Exit on error, undefined vars, pipe failures
+
         RUN_NUMBER=${{ github.run_number }}
-        VERSION=$(git status &>/dev/null && git describe --tags --always 2>/dev/null || echo "$RUN_NUMBER")
+        VERSION=$(git describe --tags --always 2>/dev/null) || VERSION="${{ github.run_number }}"
 
         ARCHS=( "amd64" "armhf")
         for ARCH in "${ARCHS[@]}"; do
@@ -121,7 +123,7 @@ jobs:
 
           if [[ $ARCH == "amd64" ]]; then
             cp linux64/asmsx pkg_$ARCH/usr/bin/asmsx
-          elif [[ $ARCH == "armhf" ]]
+          elif [[ $ARCH == "armhf" ]]; then
             cp armhf/asmsx pkg_$ARCH/usr/bin/asmsx
           else
             echo "Unknown architecture"
