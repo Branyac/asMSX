@@ -29,7 +29,7 @@ jobs:
           - target: x86-64
             bits: "64"
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
     - name: install deps
@@ -40,7 +40,7 @@ jobs:
     - name: make
       run: make asmsx${{ matrix.bits }}.exe
     - name: upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: asmsx-win-${{ matrix.target }}
         path: asmsx*.exe
@@ -48,7 +48,7 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
     - name: install deps
@@ -57,7 +57,7 @@ jobs:
         sudo apt install -y libbison-dev libfl-dev build-essential cmake flex bison libpthread-stubs0-dev
     - run: make
     - name: upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: asmsx-linux-x86_64
         path: asmsx
@@ -70,7 +70,7 @@ jobs:
       BUILD_TARGET: arm-none-linux-gnueabihf
       GCC_NAME: "gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf"
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
     - name: install deps
@@ -82,23 +82,80 @@ jobs:
     - name: make
       run: make CC=${{ env.GCC_NAME }}/bin/${{ env.BUILD_TARGET }}-gcc LDFLAGS="-static"
     - name: upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: asmsx-linux-armhf
         path: asmsx
 
+  deb:
+    name: Create package asmsx-linux-${{ matrix.arch }}.deb
+    needs: [linux, linux-armhf]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+          - arch: armhf
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+    - name: Install packaging tools
+      run: |
+        sudo apt update
+        sudo apt install -y dpkg-dev fakeroot gettext-base
+    - name: Download artifacts
+      uses: actions/download-artifact@v8
+      with:
+        path: bin
+    - name: Build .deb
+      run: |
+        set -euo pipefail  # Exit on error, undefined vars, pipe failures
+
+        RUN_NUMBER=${{ github.run_number }}
+        ARCH=${{ matrix.arch }}
+        VERSION=$(git describe --tags --always 2>/dev/null) || true
+        if [[ ! "$VERSION" =~ ^[0-9] ]]; then
+          # Package version must start with a number, if not, use run_number
+          VERSION="$RUN_NUMBER"
+        fi
+
+        echo "Create package for $ARCH"
+        mkdir -p pkg_$ARCH/usr/bin/
+        if [[ $ARCH == "amd64" ]]; then
+          cp ./bin/asmsx-linux-x86_64/asmsx pkg_$ARCH/usr/bin/asmsx
+        else
+          cp ./bin/asmsx-linux-$ARCH/asmsx pkg_$ARCH/usr/bin/asmsx
+        fi
+
+        mkdir -p pkg_$ARCH/DEBIAN pkg_$ARCH/usr/bin
+        chmod 755 pkg_$ARCH/usr/bin/asmsx
+
+        export ARCH VERSION
+        envsubst < packaging/deb/control.template > pkg_$ARCH/DEBIAN/control
+
+        dpkg-deb --build pkg_$ARCH asmsx_${VERSION}_${ARCH}.deb
+    - name: Upload .deb artifacts
+      uses: actions/upload-artifact@v7
+      with:
+        name: asmsx-linux-${{ matrix.arch }}.deb
+        path: asmsx_*.deb
+
   osx:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
     - name: install deps
-      run: brew install flex bison
+      run: |
+        export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
+        brew install flex bison
     - name: make
       run: make
     - name: upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: asmsx-darwin
         path: asmsx
@@ -107,12 +164,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: linux
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/download-artifact@v4
+    - uses: actions/checkout@v7
+    - uses: actions/download-artifact@v8
       with:
         name: asmsx-linux-x86_64
     - name: Install Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
         python-version: '3.10'
     - name: Install dependencies and fix permissions
@@ -126,11 +183,11 @@ jobs:
   release:
     name: Upload to Release
     runs-on: ubuntu-latest
-    needs: [windows, linux, linux-armhf, osx]
+    needs: [windows, linux, linux-armhf, osx, deb]
     if: startsWith(github.ref, 'refs/tags/')
     steps:
     - name: Download artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: assets
     - name: Rename artifacts
@@ -141,13 +198,15 @@ jobs:
           chmod a+x *
           if [[ "$FOLDER" == *"-win"* ]]; then
             mv * $(basename $PWD).exe
+          elif [[ "$FOLDER" == *"-deb-"* ]]; then
+            mv * $(basename $PWD).deb
           else
             mv * $(basename $PWD)
           fi
           cd ..
         done
     - name: Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         files: 'assets/asmsx-*/*'
 
