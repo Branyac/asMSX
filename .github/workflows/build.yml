@@ -96,21 +96,16 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - name: Download linux artifacts
+    - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        name: asmsx-linux-x86_64
-        path: linux64
-    - name: Download armhf artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: asmsx-linux-armhf
-        path: armhf
+        path: assets
     - name: Install packaging tools
       run: |
         sudo apt update
         sudo apt install -y dpkg-dev fakeroot gettext-base
     - name: Build .deb
+      working-directory: assets
       run: |
         set -euo pipefail  # Exit on error, undefined vars, pipe failures
 
@@ -124,11 +119,8 @@ jobs:
           mkdir -u pkg_$ARCH/usr/bin/
           if [[ $ARCH == "amd64" ]]; then
             cp linux64/asmsx pkg_$ARCH/usr/bin/asmsx
-          elif [[ $ARCH == "armhf" ]]; then
-            cp armhf/asmsx pkg_$ARCH/usr/bin/asmsx
           else
-            echo "Unknown architecture"
-            exit 1
+            cp $ARCH/asmsx pkg_$ARCH/usr/bin/asmsx
           fi
 
           mkdir -p pkg_$ARCH/DEBIAN pkg_$ARCH/usr/bin
