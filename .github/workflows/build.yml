@@ -110,6 +110,9 @@ jobs:
 
         cd bin
         ls -la
+
+        cd asmsx-linux-x86_64
+        ls -la
     - name: Build .deb
       run: |
         set -euo pipefail  # Exit on error, undefined vars, pipe failures
