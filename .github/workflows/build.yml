@@ -135,6 +135,7 @@ jobs:
       with:
         name: asmsx-debs
         path: asmsx_*.deb
+        compression-level: 0
 
   osx:
     runs-on: macos-latest
