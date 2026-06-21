@@ -116,7 +116,7 @@ jobs:
         for ARCH in "${ARCHS[@]}"; do
           echo "Create package for $ARCH"
 
-          mkdir -u pkg_$ARCH/usr/bin/
+          mkdir -p pkg_$ARCH/usr/bin/
           if [[ $ARCH == "amd64" ]]; then
             cp linux64/asmsx pkg_$ARCH/usr/bin/asmsx
           else
