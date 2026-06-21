@@ -87,6 +87,57 @@ jobs:
         name: asmsx-linux-armhf
         path: asmsx
 
+  deb:
+    name: Create .deb packages
+    needs: [linux, linux-armhf]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Download linux artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: asmsx-linux-x86_64
+        path: linux64
+    - name: Download armhf artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: asmsx-linux-armhf
+        path: armhf
+    - name: Install packaging tools
+      run: |
+        sudo apt update
+        sudo apt install -y dpkg-dev fakeroot gettext-base
+    - name: Build amd64 .deb
+      run: |
+        mkdir -p pkg_amd64/DEBIAN pkg_amd64/usr/bin
+        cp linux64/asmsx pkg_amd64/usr/bin/asmsx
+        chmod 755 pkg_amd64/usr/bin/asmsx
+        VERSION=${{ github.run_number }}-1
+        ARCH=amd64
+        envsubst < packaging/deb/control.template > pkg_amd64/DEBIAN/control
+        dpkg-deb --build pkg_amd64 asmsx_${{ github.run_number }}_amd64.deb
+    - name: Build armhf .deb
+      run: |
+        mkdir -p pkg_armhf/DEBIAN pkg_armhf/usr/bin
+        cp armhf/asmsx pkg_armhf/usr/bin/asmsx
+        chmod 755 pkg_armhf/usr/bin/asmsx
+        VERSION=${{ github.run_number }}-1
+        ARCH=armhf
+        envsubst < packaging/deb/control.template > pkg_armhf/DEBIAN/control
+        dpkg-deb --build pkg_armhf asmsx_${{ github.run_number }}_armhf.deb
+    - name: Upload .deb artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: asmsx-deb-amd64
+        path: asmsx_${{ github.run_number }}_amd64.deb
+    - name: Upload .deb artifacts (armhf)
+      uses: actions/upload-artifact@v4
+      with:
+        name: asmsx-deb-armhf
+        path: asmsx_${{ github.run_number }}_armhf.deb
+
   osx:
     runs-on: macos-latest
     steps:
@@ -126,7 +177,7 @@ jobs:
   release:
     name: Upload to Release
     runs-on: ubuntu-latest
-    needs: [windows, linux, linux-armhf, osx]
+    needs: [windows, linux, linux-armhf, osx, deb]
     if: startsWith(github.ref, 'refs/tags/')
     steps:
     - name: Download artifacts
@@ -141,6 +192,8 @@ jobs:
           chmod a+x *
           if [[ "$FOLDER" == *"-win"* ]]; then
             mv * $(basename $PWD).exe
+          elif [[ "$FOLDER" == *"-deb-"* ]]; then
+            mv * $(basename $PWD).deb
           else
             mv * $(basename $PWD)
           fi

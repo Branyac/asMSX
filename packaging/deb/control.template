@@ -1,0 +1,7 @@
+Package: asmsx
+Version: ${VERSION}
+Section: universe/otherosfs
+Priority: optional
+Architecture: ${ARCH}
+Maintainer: Branyac <deb@thingsandcode.com>
+Description: asMSX is an assembler for the Z80 processor with a number of extensions to make programming for MSX easy. It is a cross-assembler that runs on Windows, Linux and MacOS.
