@@ -96,31 +96,33 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: assets
     - name: Install packaging tools
       run: |
         sudo apt update
         sudo apt install -y dpkg-dev fakeroot gettext-base
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: assets
     - name: Build .deb
-      working-directory: assets
+      run: |
+        ls -la
+    - name: Build .deb
       run: |
         set -euo pipefail  # Exit on error, undefined vars, pipe failures
 
         RUN_NUMBER=${{ github.run_number }}
         VERSION=$(git describe --tags --always 2>/dev/null) || VERSION="${{ github.run_number }}"
 
-        ARCHS=( "amd64" "armhf")
+        ARCHS=( "amd64" "armhf" )
         for ARCH in "${ARCHS[@]}"; do
           echo "Create package for $ARCH"
 
           mkdir -p pkg_$ARCH/usr/bin/
           if [[ $ARCH == "amd64" ]]; then
-            cp asmsx-linux-x86_64 pkg_$ARCH/usr/bin/asmsx
+            cp assets/asmsx-linux-x86_64 pkg_$ARCH/usr/bin/asmsx
           else
-            cp asmsx-linux-$ARCH pkg_$ARCH/usr/bin/asmsx
+            cp assets/asmsx-linux-$ARCH pkg_$ARCH/usr/bin/asmsx
           fi
 
           mkdir -p pkg_$ARCH/DEBIAN pkg_$ARCH/usr/bin
