@@ -103,9 +103,12 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        path: assets
+        path: bin
     - name: Build .deb
       run: |
+        ls -la
+
+        cd bin
         ls -la
     - name: Build .deb
       run: |
@@ -120,9 +123,9 @@ jobs:
 
           mkdir -p pkg_$ARCH/usr/bin/
           if [[ $ARCH == "amd64" ]]; then
-            cp assets/asmsx-linux-x86_64 pkg_$ARCH/usr/bin/asmsx
+            cp ./bin/asmsx-linux-x86_64 pkg_$ARCH/usr/bin/asmsx
           else
-            cp assets/asmsx-linux-$ARCH pkg_$ARCH/usr/bin/asmsx
+            cp ./bin/asmsx-linux-$ARCH pkg_$ARCH/usr/bin/asmsx
           fi
 
           mkdir -p pkg_$ARCH/DEBIAN pkg_$ARCH/usr/bin
