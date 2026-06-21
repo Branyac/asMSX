@@ -3,6 +3,7 @@ Version: ${VERSION}
 Section: universe/otherosfs
 Priority: optional
 Architecture: ${ARCH}
+License: GPL-3.0-only
 Maintainer: Branyac <deb@thingsandcode.com>
 Homepage: https://github.com/Fubukimaru/asMSX
 Vcs-Git: https://github.com/Fubukimaru/asMSX.git
