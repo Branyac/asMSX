@@ -115,7 +115,8 @@ jobs:
         mkdir -p pkg_amd64/DEBIAN pkg_amd64/usr/bin
         cp linux64/asmsx pkg_amd64/usr/bin/asmsx
         chmod 755 pkg_amd64/usr/bin/asmsx
-        VERSION=${{ github.run_number }}
+        RUN_NUMBER=${{ github.run_number }}-1
+        VERSION=$(if $(shell git status 2>/dev/null),$(shell git describe --tags --always 2>/dev/null),$(RUN_NUMBER))
         ARCH=amd64
         envsubst < packaging/deb/control.template > pkg_amd64/DEBIAN/control
         dpkg-deb --build pkg_amd64 asmsx_${{ github.run_number }}_amd64.deb
@@ -124,7 +125,8 @@ jobs:
         mkdir -p pkg_armhf/DEBIAN pkg_armhf/usr/bin
         cp armhf/asmsx pkg_armhf/usr/bin/asmsx
         chmod 755 pkg_armhf/usr/bin/asmsx
-        VERSION=${{ github.run_number }}
+        RUN_NUMBER=${{ github.run_number }}-1
+        VERSION=$(if $(shell git status 2>/dev/null),$(shell git describe --tags --always 2>/dev/null),$(RUN_NUMBER))
         ARCH=armhf
         envsubst < packaging/deb/control.template > pkg_armhf/DEBIAN/control
         dpkg-deb --build pkg_armhf asmsx_${{ github.run_number }}_armhf.deb
