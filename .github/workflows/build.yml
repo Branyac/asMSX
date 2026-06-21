@@ -92,6 +92,12 @@ jobs:
     name: Create .deb packages
     needs: [linux, linux-armhf]
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+          - arch: armhf
     steps:
     - uses: actions/checkout@v7
       with:
@@ -109,33 +115,29 @@ jobs:
         set -euo pipefail  # Exit on error, undefined vars, pipe failures
 
         RUN_NUMBER=${{ github.run_number }}
+        ARCH=${{ matrix.arch }}
         VERSION=$(git describe --tags --always 2>/dev/null) || VERSION="${{ github.run_number }}"
 
-        ARCHS=( "amd64" "armhf" )
-        for ARCH in "${ARCHS[@]}"; do
-          echo "Create package for $ARCH"
+        echo "Create package for $ARCH"
+        mkdir -p pkg_$ARCH/usr/bin/
+        if [[ $ARCH == "amd64" ]]; then
+          cp ./bin/asmsx-linux-x86_64/asmsx pkg_$ARCH/usr/bin/asmsx
+        else
+          cp ./bin/asmsx-linux-$ARCH/asmsx pkg_$ARCH/usr/bin/asmsx
+        fi
 
-          mkdir -p pkg_$ARCH/usr/bin/
-          if [[ $ARCH == "amd64" ]]; then
-            cp ./bin/asmsx-linux-x86_64/asmsx pkg_$ARCH/usr/bin/asmsx
-          else
-            cp ./bin/asmsx-linux-$ARCH/asmsx pkg_$ARCH/usr/bin/asmsx
-          fi
+        mkdir -p pkg_$ARCH/DEBIAN pkg_$ARCH/usr/bin
+        chmod 755 pkg_$ARCH/usr/bin/asmsx
 
-          mkdir -p pkg_$ARCH/DEBIAN pkg_$ARCH/usr/bin
-          chmod 755 pkg_$ARCH/usr/bin/asmsx
+        export ARCH VERSION
+        envsubst < packaging/deb/control.template > pkg_$ARCH/DEBIAN/control
 
-          export ARCH VERSION
-          envsubst < packaging/deb/control.template > pkg_$ARCH/DEBIAN/control
-
-          dpkg-deb --build pkg_$ARCH asmsx_${VERSION}_${ARCH}.deb
-        done
+        dpkg-deb --build pkg_$ARCH asmsx_${VERSION}_${ARCH}.deb
     - name: Upload .deb artifacts
       uses: actions/upload-artifact@v7
       with:
-        name: asmsx-debs
-        path: asmsx_*.deb
-        compression-level: 0
+        name: asmsx-linux-${{ matrix.arch }}.deb
+        path: asmsx
 
   osx:
     runs-on: macos-latest
