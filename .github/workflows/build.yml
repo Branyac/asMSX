@@ -128,7 +128,7 @@ jobs:
           export ARCH VERSION
           envsubst < packaging/deb/control.template > pkg_$ARCH/DEBIAN/control
 
-          dpkg-deb --build pkg_$ARCH asmsx_$VERSION_$ARCH.deb
+          dpkg-deb --build pkg_$ARCH asmsx_${VERSION}_${ARCH}.deb
         done
     - name: Upload .deb artifacts
       uses: actions/upload-artifact@v4
