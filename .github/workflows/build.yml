@@ -118,9 +118,9 @@ jobs:
 
           mkdir -p pkg_$ARCH/usr/bin/
           if [[ $ARCH == "amd64" ]]; then
-            cp linux64/asmsx pkg_$ARCH/usr/bin/asmsx
+            cp asmsx-linux-x86_64 pkg_$ARCH/usr/bin/asmsx
           else
-            cp $ARCH/asmsx pkg_$ARCH/usr/bin/asmsx
+            cp asmsx-linux-$ARCH pkg_$ARCH/usr/bin/asmsx
           fi
 
           mkdir -p pkg_$ARCH/DEBIAN pkg_$ARCH/usr/bin
